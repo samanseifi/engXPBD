@@ -462,7 +462,7 @@ class MeshWriter:
 
 # Example usage
 if __name__ == "__main__":
-    filepath = "cuboid_tetrahedral_mesh.msh"  # Replace with your Gmsh file path
+    filepath = "data/cuboid_tetrahedral_mesh_1order.msh"  # Replace with your Gmsh file path
     mesh = Mesh(filepath)
             
     # Print a summary of the mesh
