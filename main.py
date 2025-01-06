@@ -63,7 +63,7 @@ class Mesh:
         return self.node_sets
 
 class PhysicsSimulator:
-    def __init__(self, mesh_reader, dt=0.01, gravity=np.array([9.81, 0, 0]), density=0.1):
+    def __init__(self, mesh_reader, dt=0.01, gravity=np.array([9.81, 0, 0]), density=1):
         """Initialize the physics simulator."""
         self.mesh_reader = mesh_reader
         self.dt = dt
@@ -234,7 +234,7 @@ class PhysicsSimulator:
         """        
         for step in range(steps):
             
-            self.apply_displacement([3,29,28,1,56,134,132,52,57,135,133,53,7,51,50,5], np.array([0.0, 0.0, -0.001]))
+            self.apply_displacement([3,29,28,1,56,134,132,52,57,135,133,53,7,51,50,5], np.array([0.0, 0.0, -0.01]))
 
             # self.apply_gravity()
             self.damp_velocities()
@@ -248,6 +248,14 @@ class PhysicsSimulator:
                     self.mesh_reader,
                     f"{save_path}_step_{step + 1}.vtk"
                 )
+
+class PointConstraints:
+    
+    @staticmethod
+    def fix_points(predicted_positions, reference_positions, fixed_nodes):
+        """Fix the positions of specified nodes."""
+        for node_idx in fixed_nodes:
+            predicted_positions[node_idx] = np.copy(reference_positions[node_idx])
 
 class SolidElasticity:
 
@@ -334,13 +342,13 @@ class SolidElasticity:
         lagrange += delta_lagrange        
         
         # Update predicted positions unless they are fixed
-        if p1 not in fixed_nodes or p1 not in bc_nodes:
+        if p1 not in bc_nodes:
             predicted_positions[p1] += w1 * -f1 * delta_lagrange
-        if p2 not in fixed_nodes or p2 not in bc_nodes:
+        if p2 not in bc_nodes:
             predicted_positions[p2] += w2 * -f2 * delta_lagrange
-        if p3 not in fixed_nodes or p3 not in bc_nodes:
+        if p3 not in bc_nodes:
             predicted_positions[p3] += w3 * -f3 * delta_lagrange
-        if p4 not in fixed_nodes or p4 not in bc_nodes:
+        if p4 not in bc_nodes:
             predicted_positions[p4] += w4 * -f4 * delta_lagrange
     
     @staticmethod
@@ -442,7 +450,79 @@ class SolidElasticity:
 
         return predicted_positions
 
-            
+class VolumeConstraint:
+    @staticmethod
+    def volume_constraint(
+        predicted_positions, reference_positions, p1, p2, p3, p4,
+        volume, lagrange, dt, masses, fixed_nodes=None
+    ):
+        """
+        Enforce a volume conservation constraint for a tetrahedron.
+
+        Parameters:
+        - predicted_positions: Numpy array of predicted vertex positions.
+        - reference_positions: Numpy array of reference vertex positions.
+        - p1, p2, p3, p4: Indices of the vertices forming the tetrahedron.
+        - volume: The rest volume of the tetrahedron.
+        - lagrange: Lagrange multiplier (scalar, updated in-place).
+        - dt: Time step size (scalar).
+        - masses: Array of vertex masses.
+        - fixed_nodes: Set of indices of fixed nodes (optional).
+        """
+        if fixed_nodes is None:
+            fixed_nodes = set()
+
+        # Extract positions
+        x1 = predicted_positions[p1]
+        x2 = predicted_positions[p2]
+        x3 = predicted_positions[p3]
+        x4 = predicted_positions[p4]
+
+        # Calculate current volume
+        current_volume = (1.0 / 6.0) * np.dot(np.cross(x2 - x1, x3 - x1), x4 - x1)
+        constraint_value = current_volume - volume
+
+        # Calculate gradients
+        grad0 = (1.0 / 6.0) * np.cross(x2 - x3, x4 - x3)
+        grad1 = (1.0 / 6.0) * np.cross(x3 - x1, x4 - x1)
+        grad2 = (1.0 / 6.0) * np.cross(x1 - x2, x4 - x2)
+        grad3 = (1.0 / 6.0) * np.cross(x2 - x1, x3 - x1)
+
+        # Compute inverse masses
+        w0 = 0.0 if p1 in fixed_nodes else 1.0 / masses[p1]
+        w1 = 0.0 if p2 in fixed_nodes else 1.0 / masses[p2]
+        w2 = 0.0 if p3 in fixed_nodes else 1.0 / masses[p3]
+        w3 = 0.0 if p4 in fixed_nodes else 1.0 / masses[p4]
+
+        # Weighted sum of gradient magnitudes
+        weighted_sum_of_gradients = (
+            w0 * np.dot(grad0, grad0) +
+            w1 * np.dot(grad1, grad1) +
+            w2 * np.dot(grad2, grad2) +
+            w3 * np.dot(grad3, grad3)
+        )
+
+        # Avoid numerical issues if gradients are too small
+        if weighted_sum_of_gradients < 1e-5:
+            return
+
+        # Calculate Lagrange multiplier correction
+        alpha_tilde = 1.0 / (dt**2)
+        delta_lagrange = -(constraint_value + alpha_tilde * lagrange) / (
+            weighted_sum_of_gradients + alpha_tilde
+        )
+
+        # Update Lagrange multiplier
+        lagrange += delta_lagrange
+
+        # Apply position corrections
+        predicted_positions[p1] += w0 * grad0 * delta_lagrange
+        predicted_positions[p2] += w1 * grad1 * delta_lagrange
+        predicted_positions[p3] += w2 * grad2 * delta_lagrange
+        predicted_positions[p4] += w3 * grad3 * delta_lagrange
+
+
+          
 class MeshWriter:
     @staticmethod
     def save_mesh(mesh_reader, output_filepath, file_format="vtk"):
@@ -464,6 +544,8 @@ class MeshWriter:
 if __name__ == "__main__":
     filepath = "data/cuboid_tetrahedral_mesh_1order.msh"  # Replace with your Gmsh file path
     mesh = Mesh(filepath)
+    
+    # mesh.add_perturbation(magnitude=0.01)
             
     # Print a summary of the mesh
     mesh_summary = f"Mesh Summary:\nNumber of nodes: {len(mesh.node_coords)}\n" + \
@@ -485,8 +567,18 @@ if __name__ == "__main__":
     constraints = []
     for cell in mesh.get_connectivity("tetra"):
         constraints.append(lambda pos, c=cell, m=simulator.masses, f=simulator.fixed_nodes, b=bc_nodes:
-                           SolidElasticity.saint_venant_constraint(pos, mesh.node_coords_init, *c, 1e6, 0.49, 0.0, simulator.dt, m, f, b))
+                           SolidElasticity.saint_venant_constraint(pos, mesh.node_coords_init, *c, 1e8, 0.49, 0.0, simulator.dt, m, f, b))
 
+    # fixed nodes
+    constraints.append(lambda pos, r=mesh.node_coords_init, n=fixed_nodes:
+                           PointConstraints.fix_points(pos, r, n))
+
+    # add volume constraint
+    for cell in mesh.get_connectivity("tetra"):
+        constraints.append(lambda pos, c=cell, m=simulator.masses, f=simulator.fixed_nodes:
+                           VolumeConstraint.volume_constraint(pos, mesh.node_coords_init, *c, 1.0, 0.0, simulator.dt, m, f))
+    
+    
     # higher-order constraints
     # constraints = []
     
@@ -504,6 +596,6 @@ if __name__ == "__main__":
     
 
     # Simulate over 100 steps and save each step
-    simulator.simulate(30, constraints, save_path="solid_simultiom")
+    simulator.simulate(300, constraints, save_path="solid_simultiom")
     print("Simulation complete. Mesh files saved for each step.")
 
