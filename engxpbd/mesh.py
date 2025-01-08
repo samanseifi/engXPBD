@@ -56,7 +56,6 @@ class Mesh:
             return self.connectivity.get(cell_type, None)
         return self.connectivity
     
-
     def get_node_sets(self):
         """Return the node sets."""
         return self.node_sets

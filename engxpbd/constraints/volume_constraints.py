@@ -197,7 +197,7 @@ class VolumeConstraint:
     @staticmethod
     def volume_constraint(
         predicted_positions, reference_positions, p1, p2, p3, p4,
-        volume, lagrange, dt, masses, fixed_nodes=None
+        volume, lagrange, dt, masses, fixed_nodes=None, bc_nodes=None
     ):
         """
         Enforce a volume conservation constraint for a tetrahedron.
@@ -222,7 +222,7 @@ class VolumeConstraint:
         x4 = predicted_positions[p4]
 
         # Calculate current volume
-        current_volume = (1.0 / 6.0) * np.dot(np.cross(x2 - x1, x3 - x1), x4 - x1)
+        current_volume = np.abs((1.0 / 6.0) * np.dot(np.cross(x2 - x1, x3 - x1), x4 - x1))
         constraint_value = current_volume - volume
 
         # Calculate gradients
@@ -232,10 +232,10 @@ class VolumeConstraint:
         grad3 = (1.0 / 6.0) * np.cross(x2 - x1, x3 - x1)
 
         # Compute inverse masses
-        w0 = 0.0 if p1 in fixed_nodes else 1.0 / masses[p1]
-        w1 = 0.0 if p2 in fixed_nodes else 1.0 / masses[p2]
-        w2 = 0.0 if p3 in fixed_nodes else 1.0 / masses[p3]
-        w3 = 0.0 if p4 in fixed_nodes else 1.0 / masses[p4]
+        w0 = 0.0 if p1 in (fixed_nodes or bc_nodes) else 1.0 / masses[p1]
+        w1 = 0.0 if p2 in (fixed_nodes or bc_nodes) else 1.0 / masses[p2]
+        w2 = 0.0 if p3 in (fixed_nodes or bc_nodes) else 1.0 / masses[p3]
+        w3 = 0.0 if p4 in (fixed_nodes or bc_nodes) else 1.0 / masses[p4]
 
         # Weighted sum of gradient magnitudes
         weighted_sum_of_gradients = (
