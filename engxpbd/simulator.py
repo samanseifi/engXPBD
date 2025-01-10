@@ -139,7 +139,10 @@ class PhysicsSimulator:
         # Converge constraints added
         for _ in range(self.num_constraints_iterations):
             for constraint in constraints:
-                constraint(self.predicted_positions)                                        
+                constraint(self.predicted_positions) 
+        # print("Converging")                                       
+        
+                                           
                     
     def update_positions(self):
         """Update node positions and velocities based on corrected positions."""
@@ -164,7 +167,7 @@ class PhysicsSimulator:
         """
         self.bc_nodes.update(bc_node_indices)
 
-    def simulate(self, steps, constraints, save_path=None):
+    def simulate(self, steps, constraints, elasticity_instance=None, save_path=None):
         """Run the simulation for a given number of steps and save results for each step.
 
         Parameters:
@@ -172,7 +175,13 @@ class PhysicsSimulator:
         - constraints (list): List of constraint functions to apply.
         - save_path (str): Path to save the VTK files for each step.
         """        
+
+            
         for step in range(steps):
+            
+                        
+            if elasticity_instance is not None:
+                elasticity_instance.reset_lagrange_multipliers()
             
             # self.apply_displacement([3,29,28,1,56,134,132,52,57,135,133,53,7,51,50,5], np.array([0.0, 0.0, -0.001]))
 
