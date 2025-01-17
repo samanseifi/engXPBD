@@ -163,6 +163,29 @@ class Mesh2D:
         
     def get_connectivity(self):
         return self.triangles
+    
+    
+    def save_to_ls_dyna(self, filename):
+        """
+        Save the mesh in LS-DYNA keyfile format.
+        :param filename: Name of the file to save the mesh.
+        """
+        with open(filename, 'w') as f:
+            # Write header
+            f.write("*KEYWORD\n")
+            
+            # Write node definitions
+            f.write("*NODE\n")
+            for i, (x, y) in enumerate(self.node_coords, start=1):
+                f.write(f"{i}, {x:.6f}, {y:.6f}, 0.0\n")
+            
+            # Write element definitions
+            f.write("*ELEMENT_SHELL\n")
+            for i, (n1, n2, n3) in enumerate(self.triangles, start=1):
+                f.write(f"{i}, 1, {n1+1}, {n2+1}, {n3+1}\n")
+            
+            # End keyword
+            f.write("*END\n")
 
     def visualize(self, show_node_numbers=False):
         """

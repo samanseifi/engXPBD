@@ -1,12 +1,13 @@
 import numpy as np
 from engxpbd.mesh.mesh2D import Mesh2D
 from engxpbd.simulator import PhysicsSimulator
-from engxpbd.constraints.points_constraints import PointConstraints
-from engxpbd.constraints.solid_elasticity_constraints import SolidElasticity2D, AreaConstraint
+from engxpbd.constraints.points.points_constraints import PointConstraints
+from engxpbd.constraints.solid.two_dimension.solid_elasticity_constraints import SolidElasticity2D, AreaConstraint
 
 if __name__ == "__main__":
     mesh = Mesh2D(x_min=0, x_max=10, y_min=0, y_max=1, mesh_size=0.5, structured=True)
-    dt = 0.001
+    mesh.save_to_ls_dyna("mesh.k0")
+    dt = 0.008
     
                 
     # Print a summary of the mesh
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     
 
     # # Initialize the physics simulator
-    simulator = PhysicsSimulator(mesh, dt=dt, gravity=np.array([0, -9.81]), num_constraints_iterations=100)
+    simulator = PhysicsSimulator(mesh, dt=dt, gravity=np.array([0, -9.81]), num_constraints_iterations=50)
   
     # Get top nodes as fixed nodes
     fixed_nodes = set(mesh.boundary_nodes["left"])
@@ -33,8 +34,8 @@ if __name__ == "__main__":
     
     # # Initialize SolidElasticity
     elasticity = SolidElasticity2D(
-        youngs_modulus=1e9,
-        poisson_ratio=0.4999,
+        youngs_modulus=1e6,
+        poisson_ratio=0.35,
         dt=dt,
         masses=simulator.masses
     )
@@ -71,5 +72,5 @@ if __name__ == "__main__":
     
 
     # # Simulate over 100 steps and save each step
-    simulator.simulate(1500, constraints, elasticity_instance=elasticity, save_path="solid_simultiom")
+    simulator.simulate(240, constraints, elasticity_instance=elasticity, save_path="solid_simultiom")
     print("Simulation complete. Mesh files saved for each step.")

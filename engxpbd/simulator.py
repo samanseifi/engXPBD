@@ -170,7 +170,7 @@ class PhysicsSimulator:
                     mesh_reader=self.mesh,
                     output_directory="output_directory",
                     step=int(step),  # Ensure step is an integer
-                    interval=int(100),  # Ensure interval is an integer
+                    interval=int(10),  # Ensure interval is an integer
                     file_format="vtk"
                 )
 
