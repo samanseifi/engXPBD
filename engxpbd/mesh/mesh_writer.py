@@ -1,6 +1,7 @@
 import meshio
 
 class MeshWriter:
+     
     @staticmethod
     def save_mesh(mesh_reader, output_filepath, file_format="vtk"):
         """
@@ -10,6 +11,7 @@ class MeshWriter:
         - output_filepath (str): Path to save the mesh.
         - file_format (str): Format to save the mesh (default is VTK).
         """
+        print(mesh_reader.type)
         cells = [("triangle", mesh_reader.triangles)]
         meshio.write_points_cells(
             output_filepath,

@@ -2,7 +2,7 @@ import numpy as np
 import meshio
 
 
-class MeshReader3D:
+class MeshReaderGmsh:
     def __init__(self, filepath):
         """Initialize the mesh reader by loading the Gmsh file."""
         self.filepath = filepath
@@ -42,7 +42,7 @@ class MeshReader3D:
         """Return the node IDs."""
         return self.node_ids
         
-    def get_connectivity(self, cell_type=None):
+    def get_connectivity(self):
         """
         Return the connectivity matrix for a given cell type.
 
@@ -52,7 +52,8 @@ class MeshReader3D:
 
         Returns:
         - dict or ndarray: Connectivity matrices.
-        """                
+        """    
+        cell_type='tetra'
         if cell_type:
             return self.connectivity.get(cell_type, None)
         return self.connectivity

@@ -3,10 +3,10 @@ from engxpbd.mesh.mesh_writer import MeshWriter
 
 
 class PhysicsSimulator:
-    def __init__(self, mesh, dt=0.01, gravity=None, density=10, num_constraints_iterations=50):
+    def __init__(self, mesh, dt=0.01, gravity=None, density=10, problem_dimension=2, num_constraints_iterations=50):
         """Initialize the physics simulator."""
         self.problem_type = "solid"
-        self.problem_dimension = 2
+        self.problem_dimension = problem_dimension
         
         self.mesh = mesh
         self.dt = dt
@@ -49,9 +49,9 @@ class PhysicsSimulator:
         density_map = np.full(len(self.mesh.get_connectivity()), density)
         self.masses = self._compute_masses_from_density(density_map)
 
-    def _compute_masses_from_density(self, density_map):
+    def _compute_masses_from_density_trinagle_2D(self, density_map):
         """
-        Compute masses for each node based on tetrahedron density, accounting for shared nodes.
+        Compute masses for each node based on triangle density, accounting for shared nodes.
 
         Parameters:
         - density_map (ndarray): Density values for each triangles.
@@ -59,7 +59,7 @@ class PhysicsSimulator:
         Returns:
         - ndarray: Node-based mass distribution.
         """
-        # Initialize masses and tetrahedron count per node
+        # Initialize masses and triangle count per node
         masses = np.zeros(len(self.mesh.node_coords))
         triangle_counts = np.zeros(len(self.mesh.node_coords))
 
@@ -76,17 +76,57 @@ class PhysicsSimulator:
             # Compute triangle mass
             triangle_mass = density_map[tri_idx] * area
 
-            # Distribute mass equally among the four nodes of the triangle
+            # Distribute mass equally among the three nodes of the triangle
             for node in tri:
                 masses[node] += triangle_mass / 3.0
                 triangle_counts[node] += 1
 
         # Normalize by the number of triangles sharing each node
         for i in range(len(masses)):
-            if triangle_counts[i] > 0:  # Avoid division by zero
+            if triangle_counts[i] > 0:
                 masses[i] /= triangle_counts[i]
+                
+        return masses
+    
+    def _compute_masses_from_density_tetrahedron_3D(self, density_map):
+        """
+        Compute masses for each node based on tetrahedron density.
+
+        Parameters:
+        - density_map (ndarray): Density values for each tetrahedron.
+
+        Returns:
+        - ndarray: Node-based mass distribution.
+        """
+        # Initialize masses
+        masses = np.zeros(len(self.mesh.node_coords))
+
+        # Get tetrahedron connectivity
+        tetrahedra = self.mesh.get_connectivity()
+
+        for tet_idx, tet in enumerate(tetrahedra):
+            # Extract node coordinates
+            coords = self.mesh.node_coords[tet]
+
+            # Compute tetrahedron volume using determinant formula
+            volume = np.abs(np.linalg.det(np.column_stack((coords[1] - coords[0], coords[2] - coords[0], coords[3] - coords[0]))))
+
+            # Compute tetrahedron mass
+            tetrahedron_mass = density_map[tet_idx] * volume
+
+            # Distribute mass equally among the four nodes of the tetrahedron
+            for node in tet:
+                masses[node] += tetrahedron_mass / 4.0
 
         return masses
+                
+    def _compute_masses_from_density(self, density_map):
+        if self.problem_dimension == 2:
+            return self._compute_masses_from_density_trinagle_2D(density_map)
+        elif self.problem_dimension == 3:
+            return self._compute_masses_from_density_tetrahedron_3D(density_map)
+        else:
+            raise ValueError("Invalid problem dimension.")
 
     def apply_external_force(self, node_indices, force_vector):
         for node_idx in node_indices:
