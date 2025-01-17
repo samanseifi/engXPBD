@@ -1,6 +1,7 @@
 import numpy as np
 import meshio
 
+
 class Mesh:
     def __init__(self, filepath):
         """Initialize the mesh reader by loading the Gmsh file."""
@@ -51,7 +52,7 @@ class Mesh:
 
         Returns:
         - dict or ndarray: Connectivity matrices.
-        """
+        """                
         if cell_type:
             return self.connectivity.get(cell_type, None)
         return self.connectivity
@@ -59,3 +60,7 @@ class Mesh:
     def get_node_sets(self):
         """Return the node sets."""
         return self.node_sets
+    
+    def get_surface_nodes(self):
+        """Return the surface nodes."""
+        return self.node_sets.get("surface", None)
