@@ -2,7 +2,8 @@ import numpy as np
 from engxpbd.mesh.mesh2D import Mesh2D
 from engxpbd.simulator import PhysicsSimulator
 from engxpbd.constraints.points.points_constraints import PointConstraints
-from engxpbd.constraints.solid.two_dimension.solid_elasticity_constraints import SolidElasticity2D, AreaConstraint
+from engxpbd.constraints.solid.two_dimension.solid_elasticity_constraints_linear_triangle import SolidElasticity2D
+from engxpbd.constraints.solid.two_dimension.area_constraint_linear_triangle import AreaConstraint
 
 if __name__ == "__main__":
     mesh = Mesh2D(x_min=0, x_max=10, y_min=0, y_max=1, mesh_size=0.5, structured=True)

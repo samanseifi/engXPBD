@@ -2,7 +2,7 @@ import numpy as np
 import meshio
 
 
-class Mesh:
+class MeshReader3D:
     def __init__(self, filepath):
         """Initialize the mesh reader by loading the Gmsh file."""
         self.filepath = filepath
