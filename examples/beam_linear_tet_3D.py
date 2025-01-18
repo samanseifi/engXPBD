@@ -1,5 +1,5 @@
 import numpy as np
-from engxpbd.mesh.mesh_reader_3D import MeshReader3D
+from engxpbd.mesh.mesh_reader import MeshReaderGmsh
 from engxpbd.simulator import PhysicsSimulator
 from engxpbd.constraints.points.points_constraints import PointConstraints
 from engxpbd.constraints.solid.three_dimension.finite_strain_constraint_linear_tet import SolidElasticity3D
@@ -7,7 +7,7 @@ from engxpbd.constraints.solid.three_dimension.volume_constraint_linear_tet impo
 
 if __name__ == "__main__":
     filepath = "data/cuboid_tetrahedral_mesh_1order.msh"  # Replace with your Gmsh file path
-    mesh = MeshReader3D(filepath)
+    mesh = MeshReaderGmsh(filepath)
     dt = 0.008
                 
     # Print a summary of the mesh

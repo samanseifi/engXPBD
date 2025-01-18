@@ -3,7 +3,7 @@ from engxpbd.mesh.mesh_writer import MeshWriter
 
 
 class PhysicsSimulator:
-    def __init__(self, mesh, dt=0.01, gravity=None, density=10, problem_dimension=2, num_constraints_iterations=50):
+    def __init__(self, mesh, dt=0.01, gravity=None, density=0.1, problem_dimension=2, num_constraints_iterations=50):
         """Initialize the physics simulator."""
         self.problem_type = "solid"
         self.problem_dimension = problem_dimension
@@ -69,9 +69,9 @@ class PhysicsSimulator:
         for tri_idx, tri in enumerate(triangles):
             # Extract node coordinates
             coords = self.mesh.node_coords[tri]
-
+            
             # Compute triangle area using determinant formula
-            area = 0.5 * np.abs(np.linalg.det(np.column_stack((coords[1] - coords[0], coords[2] - coords[0]))))
+            area = 0.5 * np.linalg.norm(np.cross(coords[1] - coords[0], coords[2] - coords[0]))
                         
             # Compute triangle mass
             triangle_mass = density_map[tri_idx] * area

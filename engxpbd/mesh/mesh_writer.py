@@ -11,8 +11,12 @@ class MeshWriter:
         - output_filepath (str): Path to save the mesh.
         - file_format (str): Format to save the mesh (default is VTK).
         """
-        print(mesh_reader.type)
-        cells = [("triangle", mesh_reader.triangles)]
+       
+        if hasattr(mesh_reader, "triangles"):
+            cells = [("triangle", mesh_reader.triangles)]
+        else:
+            cells = mesh_reader.mesh.cells  # Use the meshio cells directly      
+        
         meshio.write_points_cells(
             output_filepath,
             mesh_reader.node_coords,

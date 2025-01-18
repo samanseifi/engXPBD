@@ -71,6 +71,9 @@ class GeometryMesher3D:
             
     def get_nodes(self):
         return gmsh.model.mesh.getNodes()
+    
+    def get_cells(self):
+        return gmsh.model.mesh.cells
         
     
 # Example Usage
@@ -91,6 +94,6 @@ if __name__ == "__main__":
     mesher.write_mesh("cuboid_tetrahedral_mesh_1order.msh")
     node_tags, node_coords, node_params = mesher.get_nodes()
     print(node_params)
-    
+
     # Finalize the mesher
     mesher.finalize()
